@@ -100,7 +100,7 @@ const TopServicers = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
               {/* Status Badge */}
-              <motion.div
+              {/* <motion.div
                 className={`absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm
                   ${
                     item.available
@@ -112,7 +112,7 @@ const TopServicers = () => {
                 transition={{ delay: 0.5 + index * 0.1 }}
               >
                 {item.available ? "Available" : "Unavailable"}
-              </motion.div>
+              </motion.div> */}
             </div>
 
             <div className="p-6 bg-white">

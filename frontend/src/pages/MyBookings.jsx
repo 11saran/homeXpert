@@ -4,7 +4,8 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const MyBookings = () => {
-  const { backendUrl, token, getServicerData } = useContext(AppContext);
+  const { backendUrl, token, getServicerData, getImageUrl } =
+    useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const months = [
@@ -160,13 +161,16 @@ const MyBookings = () => {
           >
             <div>
               <img
-                className="w-32 bg-indigo-50 object-cover"
+                className="w-32 h-24 bg-indigo-50 object-cover border rounded"
                 src={
-                  item.serData.image
-                    ? `http://localhost:4000/uploads/${item.serData.image}`
+                  item.serData && item.serData.image
+                    ? getImageUrl(item.serData.image)
                     : "/placeholder-service.jpg"
                 }
-                alt={item.serData.name}
+                alt={item.serData?.name || "Servicer"}
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder-service.jpg";
+                }}
               />
             </div>
             <div className="flex-1 text-sm text-zinc-600">

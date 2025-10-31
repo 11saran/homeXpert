@@ -650,7 +650,7 @@ const Login = () => {
 
           <div className="text-center">
             {state === "Sign Up" ? (
-              <p className="text-gray-600">
+              <p className="text-gray-600 mt-3">
                 Already have an account?{" "}
                 <button
                   type="button"
@@ -661,7 +661,7 @@ const Login = () => {
                 </button>
               </p>
             ) : (
-              <p className="text-gray-600">
+              <p className="text-gray-600 mt-3">
                 Don't have an account?{" "}
                 <button
                   type="button"
