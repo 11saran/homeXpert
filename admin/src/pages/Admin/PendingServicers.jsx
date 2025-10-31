@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { AdminContext } from "../../context/AdminContext";
 import { AppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
@@ -11,9 +11,12 @@ const PendingServicers = () => {
     approveServicer,
     rejectServicer,
     pendingServicers,
+    getImageUrl,
   } = useContext(AdminContext);
 
   const { loading, setLoading } = useContext(AppContext);
+
+  const [previewUrl, setPreviewUrl] = useState("");
 
   console.log("Pending Servicers Data:", pendingServicers);
 
@@ -52,14 +55,16 @@ const PendingServicers = () => {
             pendingServicers.map((item, index) => (
               <div
                 key={index}
-                className="flex items-center gap-3 px-6 py-4 hover:bg-gray-100 border-b"
+                className="relative px-6 py-4 hover:bg-gray-100 border-b"
               >
+                {/* Servicer avatar pinned to the top-left corner */}
                 <img
-                  src={item.image}
-                  alt=""
-                  className="w-16 h-16 rounded-full object-cover"
+                  src={getImageUrl(item.image)}
+                  alt="Servicer avatar"
+                  className="absolute top-4 left-6 w-16 h-16 rounded-full object-cover border cursor-pointer"
+                  onClick={() => setPreviewUrl(getImageUrl(item.image))}
                 />
-                <div className="flex-1">
+                <div className="flex-1 pl-24">
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="text-lg font-semibold text-gray-800">
@@ -77,9 +82,9 @@ const PendingServicers = () => {
                       <p className="text-sm text-gray-600 mb-1">
                         Phone: <span className="font-medium">{item.phone}</span>
                       </p>
-                      <p className="text-sm text-gray-600 mb-1">
+                      {/* <p className="text-sm text-gray-600 mb-1">
                         Fees: <span className="font-medium">₹{item.fees}</span>
-                      </p>
+                      </p> */}
                       <p className="text-sm text-gray-600">
                         District:{" "}
                         <span className="font-medium">{item.district}</span>
@@ -170,6 +175,31 @@ const PendingServicers = () => {
           )}
         </div>
       </div>
+      {/* Image Preview Modal */}
+      {previewUrl && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+          onClick={() => setPreviewUrl("")}
+        >
+          <div
+            className="relative max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute -top-3 -right-3 bg-white text-gray-800 rounded-full w-8 h-8 shadow flex items-center justify-center"
+              onClick={() => setPreviewUrl("")}
+              aria-label="Close preview"
+            >
+              ✕
+            </button>
+            <img
+              src={previewUrl}
+              alt="Preview"
+              className="rounded-lg shadow-2xl object-contain max-w-[90vw] max-h-[90vh]"
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
