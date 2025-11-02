@@ -76,7 +76,7 @@ const Footer = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
             viewport={{ once: true }}
           >
-            {["Facebook", "Twitter", "Instagram", "LinkedIn"].map(
+            {/* {["Facebook", "Twitter", "Instagram", "LinkedIn"].map(
               (social, index) => (
                 <motion.div
                   key={social}
@@ -91,7 +91,7 @@ const Footer = () => {
                   <span className="text-xs font-semibold">{social[0]}</span>
                 </motion.div>
               )
-            )}
+            )} */}
           </motion.div>
         </motion.div>
 
