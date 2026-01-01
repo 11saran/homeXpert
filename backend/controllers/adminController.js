@@ -5,6 +5,7 @@ import servicerModel from "../models/servicerModel.js";
 import jwt from "jsonwebtoken";
 import appointmentModel from "../models/appointmentModel.js";
 import userModel from "../models/userModel.js";
+import transporter from "../config/email.js";
 
 //API for adding Servicers
 
@@ -280,6 +281,31 @@ const approveServicer = async (req, res) => {
       status: "approved",
     });
 
+    // Send email notification to servicer
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: servicer.email,
+      subject: "Your Servicer Account has been Approved",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4CAF50;">Congratulations, ${servicer.name}!</h2>
+          <p>Your servicer account registration has been approved by our admin team.</p>
+          <p>You can now log in to your account and start accepting service requests.</p>
+          <p>Thank you for joining HomeXpert!</p>
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending email:", error);
+      } else {
+        console.log("Email sent:", info.response);
+      }
+    });
+
     res.json({
       success: true,
       message: "Servicer approved successfully",
@@ -293,12 +319,19 @@ const approveServicer = async (req, res) => {
 // API to reject servicer registration
 const rejectServicer = async (req, res) => {
   try {
-    const { servicerId } = req.body;
+    const { servicerId, reason } = req.body;
 
     if (!servicerId) {
       return res.status(400).json({
         success: false,
         message: "Servicer ID required",
+      });
+    }
+
+    if (!reason || reason.trim() === "") {
+      return res.status(400).json({
+        success: false,
+        message: "Rejection reason is required",
       });
     }
 
@@ -312,6 +345,33 @@ const rejectServicer = async (req, res) => {
 
     await servicerModel.findByIdAndUpdate(servicerId, {
       status: "rejected",
+    });
+
+    // Send email notification to servicer about rejection
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: servicer.email,
+      subject: "Servicer Registration Rejected",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #f44336;">Registration Update, ${servicer.name}</h2>
+          <p>We regret to inform you that your servicer registration has been rejected.</p>
+          <p><strong>Reason for rejection:</strong></p>
+          <p style="background-color: #f5f5f5; padding: 15px; border-left: 4px solid #f44336;">${reason}</p>
+          <p>If you believe this decision was made in error or if you have additional information to provide, please contact our support team.</p>
+          <p>You can reapply with corrected information if applicable.</p>
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending rejection email:", error);
+      } else {
+        console.log("Rejection email sent:", info.response);
+      }
     });
 
     res.json({

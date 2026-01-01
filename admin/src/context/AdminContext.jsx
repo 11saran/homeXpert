@@ -210,11 +210,11 @@ const AdminContextProvider = (props) => {
     }
   };
 
-  const rejectServicer = async (servicerId) => {
+  const rejectServicer = async (servicerId, reason) => {
     try {
       const { data } = await axios.post(
         backendUrl + "/api/admin/reject-servicer",
-        { servicerId },
+        { servicerId, reason },
         { headers: { aToken } }
       );
       if (data.success) {

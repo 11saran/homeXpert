@@ -17,6 +17,9 @@ const PendingServicers = () => {
   const { loading, setLoading } = useContext(AppContext);
 
   const [previewUrl, setPreviewUrl] = useState("");
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [selectedServicerId, setSelectedServicerId] = useState(null);
+  const [rejectionReason, setRejectionReason] = useState("");
 
   console.log("Pending Servicers Data:", pendingServicers);
 
@@ -98,7 +101,10 @@ const PendingServicers = () => {
                         Approve
                       </button>
                       <button
-                        onClick={() => rejectServicer(item._id)}
+                        onClick={() => {
+                          setSelectedServicerId(item._id);
+                          setShowRejectModal(true);
+                        }}
                         className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
                       >
                         Reject
@@ -197,6 +203,54 @@ const PendingServicers = () => {
               alt="Preview"
               className="rounded-lg shadow-2xl object-contain max-w-[90vw] max-h-[90vh]"
             />
+          </div>
+        </div>
+      )}
+      {/* Rejection Reason Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4 text-gray-800">
+              Reject Servicer Registration
+            </h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Please provide a reason for rejection. This will be sent to the
+              servicer via email.
+            </p>
+            <textarea
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              placeholder="Enter rejection reason..."
+              className="w-full p-3 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+              rows="4"
+              required
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectionReason("");
+                  setSelectedServicerId(null);
+                }}
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (rejectionReason.trim()) {
+                    rejectServicer(selectedServicerId, rejectionReason.trim());
+                    setShowRejectModal(false);
+                    setRejectionReason("");
+                    setSelectedServicerId(null);
+                  }
+                }}
+                disabled={!rejectionReason.trim()}
+                className="flex-1 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Reject
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -2,6 +2,7 @@ import servicerModel from "../models/servicerModel.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import validator from "validator";
+import transporter from "../config/email.js";
 
 const changeAvailability = async (req, res) => {
   try {
@@ -148,6 +149,32 @@ const registerServicer = async (req, res) => {
 
     const newServicer = new servicerModel(servicerData);
     await newServicer.save();
+
+    // Send email notification to servicer about registration
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Registration Submitted - Under Review",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2196F3;">Thank you for registering, ${name}!</h2>
+          <p>Your servicer registration has been submitted successfully.</p>
+          <p>Our admin team will review your details and documents within 24 hours.</p>
+          <p>You will receive an email notification once your account is approved or if additional information is needed.</p>
+          <p>Thank you for choosing HomeXpert!</p>
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending registration email:", error);
+      } else {
+        console.log("Registration email sent:", info.response);
+      }
+    });
 
     res.status(201).json({
       success: true,
