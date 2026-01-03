@@ -4,7 +4,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 const MyBookings = () => {
-  const { backendUrl, token, getServicerData, getImageUrl } =
+  const { backendUrl, token, getServicerData, getImageUrl, servicers } =
     useContext(AppContext);
   const [appointments, setAppointments] = useState([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -44,9 +44,25 @@ const MyBookings = () => {
       if (data.success) {
         const newAppointments = data.appointments.reverse();
 
+        // Merge fresh servicer data with appointments
+        const appointmentsWithFreshData = newAppointments.map((appointment) => {
+          const freshServicerData = servicers.find(
+            (ser) => ser._id === appointment.serId
+          );
+          return {
+            ...appointment,
+            serData: freshServicerData
+              ? {
+                  ...appointment.serData,
+                  ...freshServicerData,
+                }
+              : appointment.serData,
+          };
+        });
+
         // Check if any status has changed and show notification
         if (appointments.length > 0) {
-          newAppointments.forEach((newAppointment, index) => {
+          appointmentsWithFreshData.forEach((newAppointment, index) => {
             const oldAppointment = appointments.find(
               (apt) => apt._id === newAppointment._id
             );
@@ -71,7 +87,7 @@ const MyBookings = () => {
           });
         }
 
-        setAppointments(newAppointments);
+        setAppointments(appointmentsWithFreshData);
         //console.log(data.appointments);
       }
     } catch (error) {
@@ -146,7 +162,7 @@ const MyBookings = () => {
       // Cleanup interval on component unmount
       return () => clearInterval(interval);
     }
-  }, [token]);
+  }, [token, servicers]); // Add servicers as dependency
 
   return (
     <div>

@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { ServicerContext } from "../context/ServicerContext";
+import { AppContext } from "../context/AppContext";
 import ServicerNavbar from "../components/ServicerNavbar";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
@@ -14,6 +15,7 @@ const ServicerDashboard = () => {
     servicerToken,
     getImageUrl,
   } = useContext(ServicerContext);
+  const { getServicerData } = useContext(AppContext);
 
   const [editModal, setEditModal] = useState(false);
   const [editData, setEditData] = useState({
@@ -93,6 +95,8 @@ const ServicerDashboard = () => {
       }
 
       await updateServicerProfile(formData);
+      // Refresh the servicers list in AppContext to update profile images in appointments
+      await getServicerData();
       setEditModal(false);
       toast.success("Profile updated successfully!");
     } catch (error) {
