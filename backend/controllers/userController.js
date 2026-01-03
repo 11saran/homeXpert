@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { v2 as cloudinary } from "cloudinary";
 import servicerModel from "../models/servicerModel.js";
 import appointmentModel from "../models/appointmentModel.js";
+import transporter from "../config/email.js";
 
 //Api register user
 
@@ -222,6 +223,113 @@ const bookAppointment = async (req, res) => {
 
     //save new slots data in serData
     await servicerModel.findByIdAndUpdate(serId, { slots_booked });
+
+    // Send email notifications
+    const formattedDate = new Date(slotDate).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    // Email to User
+    const userMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: userData.email,
+      subject: "Appointment Booked Successfully - HomeXpert",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #4CAF50;">Appointment Confirmed!</h2>
+          <p>Dear ${userData.name},</p>
+          <p>Your appointment has been successfully booked with <strong>${
+            serData.name
+          }</strong>.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Appointment Details:</h3>
+            <p><strong>Service:</strong> ${serData.speciality}</p>
+            <p><strong>Servicer:</strong> ${serData.name}</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Time:</strong> ${slotTime}</p>
+            <p><strong>Status:</strong> Pending Confirmation</p>
+            ${
+              req.body.description
+                ? `<p><strong>Description:</strong> ${req.body.description}</p>`
+                : ""
+            }
+          </div>
+          
+          <p>The servicer will confirm your appointment shortly. You will receive another notification once it's confirmed.</p>
+          <p>You can track your appointment status in your dashboard.</p>
+          
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    // Email to Servicer
+    const servicerMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: serData.email,
+      subject: "New Appointment Request - HomeXpert",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2196F3;">New Appointment Request!</h2>
+          <p>Dear ${serData.name},</p>
+          <p>You have received a new appointment request from <strong>${
+            userData.name
+          }</strong>.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Appointment Details:</h3>
+            <p><strong>Service:</strong> ${serData.speciality}</p>
+            <p><strong>Customer:</strong> ${userData.name}</p>
+            <p><strong>Customer Phone:</strong> ${userData.phone}</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Time:</strong> ${slotTime}</p>
+            <p><strong>Status:</strong> Pending Your Confirmation</p>
+            ${
+              req.body.description
+                ? `<p><strong>Description:</strong> ${req.body.description}</p>`
+                : ""
+            }
+            ${
+              req.body.address && req.body.address.address1
+                ? `<p><strong>Address:</strong> ${req.body.address.address1}${
+                    req.body.address.address2
+                      ? ", " + req.body.address.address2
+                      : ""
+                  }</p>`
+                : ""
+            }
+          </div>
+          
+          <p>Please log in to your dashboard to confirm or reject this appointment.</p>
+          
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    // Send emails asynchronously
+    transporter.sendMail(userMailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending user booking email:", error);
+      } else {
+        console.log("User booking email sent:", info.response);
+      }
+    });
+
+    transporter.sendMail(servicerMailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending servicer booking email:", error);
+      } else {
+        console.log("Servicer booking email sent:", info.response);
+      }
+    });
+
     res.json({ success: true, message: "Appointment Booked" });
   } catch (error) {
     console.log(error);
@@ -274,6 +382,58 @@ const cancelAppointment = async (req, res) => {
     );
 
     await servicerModel.findByIdAndUpdate(serId, { slots_booked });
+
+    // Send email notification to servicer about cancellation
+    const formattedDate = new Date(slotDate).toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const servicerMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: serData.email,
+      subject: "Appointment Cancelled by Customer - HomeXpert",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #f44336;">Appointment Cancelled</h2>
+          <p>Dear ${serData.name},</p>
+          <p>An appointment has been cancelled by the customer.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Cancelled Appointment Details:</h3>
+            <p><strong>Service:</strong> ${appointmentData.serviceType}</p>
+            <p><strong>Customer:</strong> ${appointmentData.userData.name}</p>
+            <p><strong>Customer Phone:</strong> ${
+              appointmentData.userData.phone
+            }</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Time:</strong> ${slotTime}</p>
+            <p><strong>Status:</strong> <span style="color: #f44336; font-weight: bold;">Cancelled</span></p>
+            ${
+              appointmentData.description
+                ? `<p><strong>Description:</strong> ${appointmentData.description}</p>`
+                : ""
+            }
+          </div>
+          
+          <p>The time slot has been automatically released and is now available for other bookings.</p>
+          
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(servicerMailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending cancellation email:", error);
+      } else {
+        console.log("Cancellation email sent:", info.response);
+      }
+    });
+
     res.status(200).json({ success: true, message: "Appointment Cancelled" });
   } catch (error) {
     console.log(error);

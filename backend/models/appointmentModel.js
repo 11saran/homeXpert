@@ -12,6 +12,7 @@ const appointmentSchema = new mongoose.Schema({
   description: { type: String, default: "" },
   address: { type: Object, default: {} },
   status: { type: String, default: "pending" }, // pending, confirmed, rejected, completed
+  rejectionReason: { type: String, default: "" }, // Reason for rejection
   date: { type: Number, required: true },
   cancelled: { type: Boolean, default: false },
   isCompleted: { type: Boolean, default: false },

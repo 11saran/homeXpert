@@ -412,6 +412,7 @@ const getAppointments = async (req, res) => {
       description: appointment.description || "No description provided",
       address: appointment.address || appointment.userData?.address || {},
       status: appointment.status || "pending",
+      rejectionReason: appointment.rejectionReason || "",
       createdAt: appointment.date,
     }));
 
@@ -429,7 +430,7 @@ const getAppointments = async (req, res) => {
 const updateAppointmentStatus = async (req, res) => {
   try {
     const servicerId = req.user.id;
-    const { appointmentId, status } = req.body;
+    const { appointmentId, status, rejectionReason } = req.body;
 
     const { default: appointmentModel } = await import(
       "../models/appointmentModel.js"
@@ -447,7 +448,112 @@ const updateAppointmentStatus = async (req, res) => {
       });
     }
 
-    await appointmentModel.findByIdAndUpdate(appointmentId, { status });
+    const updateData = { status };
+    if (status === "rejected" && rejectionReason) {
+      updateData.rejectionReason = rejectionReason;
+    }
+
+    await appointmentModel.findByIdAndUpdate(appointmentId, updateData);
+
+    // Send email notification to user about status update
+    const formattedDate = new Date(appointment.slotDate).toLocaleDateString(
+      "en-US",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }
+    );
+
+    let statusMessage = "";
+    let statusColor = "#2196F3"; // default blue
+
+    switch (status) {
+      case "confirmed":
+        statusMessage = "confirmed";
+        statusColor = "#4CAF50"; // green
+        break;
+      case "completed":
+        statusMessage = "marked as completed";
+        statusColor = "#4CAF50"; // green
+        break;
+      case "rejected":
+        statusMessage = "rejected";
+        statusColor = "#f44336"; // red
+        break;
+      case "cancelled":
+        statusMessage = "cancelled";
+        statusColor = "#f44336"; // red
+        break;
+      default:
+        statusMessage = `updated to ${status}`;
+    }
+
+    const userMailOptions = {
+      from: process.env.EMAIL_USER,
+      to: appointment.userData.email,
+      subject: `Appointment ${
+        statusMessage.charAt(0).toUpperCase() + statusMessage.slice(1)
+      } - HomeXpert`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: ${statusColor};">Appointment Update</h2>
+          <p>Dear ${appointment.userData.name},</p>
+          <p>Your appointment with <strong>${
+            appointment.serData.name
+          }</strong> has been <strong>${statusMessage}</strong>.</p>
+          
+          <div style="background-color: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #333;">Appointment Details:</h3>
+            <p><strong>Service:</strong> ${appointment.serviceType}</p>
+            <p><strong>Servicer:</strong> ${appointment.serData.name}</p>
+            <p><strong>Date:</strong> ${formattedDate}</p>
+            <p><strong>Time:</strong> ${appointment.slotTime}</p>
+            <p><strong>Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${
+        status.charAt(0).toUpperCase() + status.slice(1)
+      }</span></p>
+            ${
+              appointment.description
+                ? `<p><strong>Description:</strong> ${appointment.description}</p>`
+                : ""
+            }
+            ${
+              status === "rejected" && rejectionReason
+                ? `<p><strong>Rejection Reason:</strong> ${rejectionReason}</p>`
+                : ""
+            }
+          </div>
+          
+          ${
+            status === "confirmed"
+              ? "<p>Your servicer will arrive at the scheduled time. Please ensure someone is available at the service location.</p>"
+              : ""
+          }
+          ${
+            status === "cancelled"
+              ? "<p>If you need to reschedule, please book a new appointment.</p>"
+              : ""
+          }
+          ${
+            status === "completed"
+              ? "<p>Thank you for using HomeXpert services. We hope you were satisfied with the service.</p>"
+              : ""
+          }
+          
+          <br>
+          <p>Best regards,<br>HomeXpert Team</p>
+        </div>
+      `,
+    };
+
+    transporter.sendMail(userMailOptions, (error, info) => {
+      if (error) {
+        console.log("Error sending status update email:", error);
+      } else {
+        console.log("Status update email sent:", info.response);
+      }
+    });
 
     res.status(200).json({
       success: true,
