@@ -94,11 +94,26 @@ const AdminContextProvider = (props) => {
       });
 
       if (data.success) {
+        // Refresh servicers data to get latest profile images
+        await getAllServicers();
+
         const newAppointments = data.appointments;
+
+        // Merge fresh servicer data with appointments
+        const appointmentsWithFreshData = newAppointments.map(appointment => {
+          const freshServicerData = servicers.find(ser => ser._id === appointment.serId);
+          return {
+            ...appointment,
+            serData: freshServicerData ? {
+              ...appointment.serData,
+              ...freshServicerData
+            } : appointment.serData
+          };
+        });
 
         // Check if any status has changed and show notification
         if (appointments.length > 0 && showLoading) {
-          newAppointments.forEach((newAppointment) => {
+          appointmentsWithFreshData.forEach((newAppointment) => {
             const oldAppointment = appointments.find(
               (apt) => apt._id === newAppointment._id
             );
@@ -123,7 +138,7 @@ const AdminContextProvider = (props) => {
           });
         }
 
-        setAppointments(newAppointments);
+        setAppointments(appointmentsWithFreshData);
         // console.log(data.appointments);
       } else {
         toast.error(data.message);
@@ -162,7 +177,25 @@ const AdminContextProvider = (props) => {
         headers: { aToken },
       });
       if (data.success) {
-        setDashData(data.dashData);
+        // Refresh servicers data to get latest profile images
+        await getAllServicers();
+
+        // Merge fresh servicer data with dashboard appointments
+        const dashDataWithFreshServicerData = {
+          ...data.dashData,
+          latestAppointments: data.dashData.latestAppointments?.map(appointment => {
+            const freshServicerData = servicers.find(ser => ser._id === appointment.serId);
+            return {
+              ...appointment,
+              serData: freshServicerData ? {
+                ...appointment.serData,
+                ...freshServicerData
+              } : appointment.serData
+            };
+          }) || []
+        };
+
+        setDashData(dashDataWithFreshServicerData);
         // console.log(data.dashData);
       } else {
         toast.error(data.message);

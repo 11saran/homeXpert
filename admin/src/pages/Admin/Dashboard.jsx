@@ -6,7 +6,7 @@ import Loader from "../../components/Loader";
 import { NavLink } from "react-router-dom";
 
 const Dashboard = () => {
-  const { aToken, getDashData, cancelAppointment, dashData, getImageUrl } =
+  const { aToken, getDashData, cancelAppointment, dashData, getImageUrl, servicers } =
     useContext(AdminContext);
 
   const { slotDateFormat, loading, setLoading } = useContext(AppContext);
@@ -24,7 +24,7 @@ const Dashboard = () => {
       // Cleanup interval on component unmount
       return () => clearInterval(interval);
     }
-  }, [aToken]);
+  }, [aToken, servicers]);
 
   if (loading || !dashData) {
     return <Loader />;

@@ -98,7 +98,7 @@ const ServicerDashboard = () => {
       // Refresh the servicers list in AppContext to update profile images in appointments
       await getServicerData();
       setEditModal(false);
-      toast.success("Profile updated successfully!");
+      // toast.success("Profile updated successfully!");
     } catch (error) {
       console.error("Profile update error:", error);
       toast.error("Failed to update profile");

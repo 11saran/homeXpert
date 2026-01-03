@@ -12,6 +12,7 @@ const AllAppointment = () => {
     deleteAppointment,
     isRefreshing,
     getImageUrl,
+    servicers,
   } = useContext(AdminContext);
   const { calculateAge, slotDateFormat } = useContext(AppContext);
 
@@ -31,7 +32,7 @@ const AllAppointment = () => {
       // Cleanup interval on component unmount
       return () => clearInterval(interval);
     }
-  }, [aToken]);
+  }, [aToken, servicers]);
 
   // Filter appointments based on search term
   const filteredAppointments = appointments.filter((appointment) => {
