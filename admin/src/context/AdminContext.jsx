@@ -100,14 +100,18 @@ const AdminContextProvider = (props) => {
         const newAppointments = data.appointments;
 
         // Merge fresh servicer data with appointments
-        const appointmentsWithFreshData = newAppointments.map(appointment => {
-          const freshServicerData = servicers.find(ser => ser._id === appointment.serId);
+        const appointmentsWithFreshData = newAppointments.map((appointment) => {
+          const freshServicerData = servicers.find(
+            (ser) => ser._id === appointment.serId
+          );
           return {
             ...appointment,
-            serData: freshServicerData ? {
-              ...appointment.serData,
-              ...freshServicerData
-            } : appointment.serData
+            serData: freshServicerData
+              ? {
+                  ...appointment.serData,
+                  ...freshServicerData,
+                }
+              : appointment.serData,
           };
         });
 
@@ -183,16 +187,21 @@ const AdminContextProvider = (props) => {
         // Merge fresh servicer data with dashboard appointments
         const dashDataWithFreshServicerData = {
           ...data.dashData,
-          latestAppointments: data.dashData.latestAppointments?.map(appointment => {
-            const freshServicerData = servicers.find(ser => ser._id === appointment.serId);
-            return {
-              ...appointment,
-              serData: freshServicerData ? {
-                ...appointment.serData,
-                ...freshServicerData
-              } : appointment.serData
-            };
-          }) || []
+          latestAppointments:
+            data.dashData.latestAppointments?.map((appointment) => {
+              const freshServicerData = servicers.find(
+                (ser) => ser._id === appointment.serId
+              );
+              return {
+                ...appointment,
+                serData: freshServicerData
+                  ? {
+                      ...appointment.serData,
+                      ...freshServicerData,
+                    }
+                  : appointment.serData,
+              };
+            }) || [],
         };
 
         setDashData(dashDataWithFreshServicerData);

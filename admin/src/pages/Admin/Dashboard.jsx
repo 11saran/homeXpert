@@ -6,8 +6,14 @@ import Loader from "../../components/Loader";
 import { NavLink } from "react-router-dom";
 
 const Dashboard = () => {
-  const { aToken, getDashData, cancelAppointment, dashData, getImageUrl, servicers } =
-    useContext(AdminContext);
+  const {
+    aToken,
+    getDashData,
+    cancelAppointment,
+    dashData,
+    getImageUrl,
+    servicers,
+  } = useContext(AdminContext);
 
   const { slotDateFormat, loading, setLoading } = useContext(AppContext);
 
