@@ -8,6 +8,9 @@ const ManageAppointments = () => {
   const { servicerData, servicerToken } = useContext(ServicerContext);
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectingAppointmentId, setRejectingAppointmentId] = useState(null);
   const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
   useEffect(() => {
@@ -40,11 +43,15 @@ const ManageAppointments = () => {
     }
   };
 
-  const handleAppointmentStatus = async (appointmentId, status) => {
+  const handleAppointmentStatus = async (
+    appointmentId,
+    status,
+    rejectionReason = ""
+  ) => {
     try {
       const res = await axios.post(
         `${backendUrl}/api/servicer/update-appointment`,
-        { appointmentId, status },
+        { appointmentId, status, rejectionReason },
         {
           headers: {
             Authorization: `Bearer ${servicerToken}`,
@@ -68,6 +75,33 @@ const ManageAppointments = () => {
       console.error("Update appointment error:", error);
       toast.error("Failed to update appointment");
     }
+  };
+
+  const handleRejectClick = (appointmentId) => {
+    setRejectingAppointmentId(appointmentId);
+    setRejectReason("");
+    setShowRejectModal(true);
+  };
+
+  const handleRejectSubmit = () => {
+    if (!rejectReason.trim()) {
+      toast.error("Please provide a reason for rejection");
+      return;
+    }
+    handleAppointmentStatus(
+      rejectingAppointmentId,
+      "rejected",
+      rejectReason.trim()
+    );
+    setShowRejectModal(false);
+    setRejectingAppointmentId(null);
+    setRejectReason("");
+  };
+
+  const handleRejectCancel = () => {
+    setShowRejectModal(false);
+    setRejectingAppointmentId(null);
+    setRejectReason("");
   };
 
   const handleDeleteAppointment = async (appointmentId) => {
@@ -161,6 +195,44 @@ const ManageAppointments = () => {
     }
   };
 
+  const isAppointmentTimePassed = (appointment) => {
+    try {
+      const now = new Date();
+      let appointmentDate;
+
+      // Parse date
+      if (
+        typeof appointment.date === "string" &&
+        appointment.date.includes("/")
+      ) {
+        // Handle "day/month/year" format
+        const [day, month, year] = appointment.date.split("/");
+        appointmentDate = new Date(year, month - 1, day);
+      } else if (typeof appointment.date === "number") {
+        // Handle timestamp
+        appointmentDate = new Date(appointment.date);
+      } else {
+        // Handle ISO string
+        appointmentDate = new Date(appointment.date);
+      }
+
+      // Parse time
+      let hours = 0,
+        minutes = 0;
+      if (appointment.time && appointment.time.includes(":")) {
+        [hours, minutes] = appointment.time.split(":").map(Number);
+      }
+
+      // Set time on the date
+      appointmentDate.setHours(hours, minutes, 0, 0);
+
+      return now >= appointmentDate;
+    } catch (error) {
+      console.error("Error checking appointment time:", error);
+      return false; // Default to not showing if there's an error
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -239,6 +311,13 @@ const ManageAppointments = () => {
                             <strong>Description:</strong>{" "}
                             {appointment.description || "No description"}
                           </p>
+                          {appointment.status === "rejected" &&
+                            appointment.rejectionReason && (
+                              <p className="text-red-600 mb-2">
+                                <strong>Rejection Reason:</strong>{" "}
+                                {appointment.rejectionReason}
+                              </p>
+                            )}
                         </div>
                       </div>
                       <div className="mt-2">
@@ -281,32 +360,28 @@ const ManageAppointments = () => {
                               ✅ Accept
                             </button>
                             <button
-                              onClick={() =>
-                                handleAppointmentStatus(
-                                  appointment._id,
-                                  "rejected"
-                                )
-                              }
+                              onClick={() => handleRejectClick(appointment._id)}
                               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
                             >
                               ❌ Reject
                             </button>
                           </>
                         )}
-                        {appointment.status === "confirmed" && (
-                          <button
-                            onClick={() =>
-                              handleAppointmentStatus(
-                                appointment._id,
-                                "completed"
-                              )
-                            }
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-                          >
-                            ✅ Mark Complete
-                          </button>
-                        )}
-                        {appointment.status === "rejected" && (
+                        {appointment.status === "confirmed" &&
+                          isAppointmentTimePassed(appointment) && (
+                            <button
+                              onClick={() =>
+                                handleAppointmentStatus(
+                                  appointment._id,
+                                  "completed"
+                                )
+                              }
+                              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                            >
+                              ✅ Mark Complete
+                            </button>
+                          )}
+                        {/* {appointment.status === "rejected" && (
                           <button
                             onClick={() =>
                               handleAppointmentStatus(
@@ -318,7 +393,7 @@ const ManageAppointments = () => {
                           >
                             🔄 Restore
                           </button>
-                        )}
+                        )} */}
                         {appointment.status === "completed" && (
                           <button
                             onClick={() =>
@@ -457,6 +532,42 @@ const ManageAppointments = () => {
           </div>
         </div>
       </div>
+
+      {/* Rejection Reason Modal */}
+      {showRejectModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Reject Appointment
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Please provide a reason for rejecting this appointment:
+            </p>
+            <textarea
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Enter rejection reason..."
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+              rows={4}
+              maxLength={500}
+            />
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handleRejectCancel}
+                className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectSubmit}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

@@ -76,7 +76,7 @@ const ServicerContextProvider = (props) => {
       if (error.response) {
         console.error("API Error:", error.response.data);
       }
-      toast.error("Failed to load servicer profile");
+      // toast.error("Failed to load servicer profile");
     } finally {
       setLoading(false);
     }
