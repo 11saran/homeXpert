@@ -30,7 +30,7 @@ const Dashboard = () => {
       // Cleanup interval on component unmount
       return () => clearInterval(interval);
     }
-  }, [aToken, servicers]);
+  }, [aToken]);
 
   if (loading || !dashData) {
     return <Loader />;
